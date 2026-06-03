@@ -1,0 +1,85 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ============================================================
+# PHYSICAL PARAMETERS
+# ============================================================
+g    = 9.81
+mb   = 0.300
+mr   = 0.087
+ms   = 0.430
+mbrs = mb + mr + ms
+lb   = 0.473
+lr   = 0.5
+x    = 0.09
+
+lofX = (x * ms + lb/2 * mb + lr * mr) / mbrs
+a0_x = g * mbrs * lofX
+
+# ============================================================
+# x=0.09 DATA ONLY — most consistent
+# ============================================================
+u_fit  = np.array([0,  5,    10,   19,   20,   24,   30,   40,   48  ])
+phi_fit= np.array([0,  1.5,  6.5,  20.0, 22.0, 30.0, 46.5, 72.3, 90.0])
+
+Mr_fit = a0_x * np.sin(np.deg2rad(phi_fit))
+
+# ============================================================
+# FIT — quadratic through origin (best balance)
+# ============================================================
+A = np.column_stack([u_fit, u_fit**2])
+coeffs, _, _, _ = np.linalg.lstsq(A, Mr_fit, rcond=None)
+c1, c2 = coeffs
+
+print(f"Quadratic through origin:")
+print(f"  Mr(u) = {c1:.6f}*u + {c2:.6f}*u^2")
+print(f"\nFor your code:")
+print(f"  def Mr_quadratic(u):")
+print(f"      return {c1:.6f}*u + {c2:.6f}*u**2")
+
+# ============================================================
+# VALIDATE — check equilibrium angles
+# ============================================================
+print("\n==============================")
+print("VALIDATION")
+print("==============================")
+print(f"{'u':>5}  {'Mr_model':>10}  "
+      f"{'phi_model':>10}  {'phi_measured':>12}  {'error':>8}")
+
+for i in range(len(u_fit)):
+    Mr_model  = c1*u_fit[i] + c2*u_fit[i]**2
+    phi_model = np.rad2deg(
+        np.arcsin(np.clip(Mr_model/a0_x, -1, 1))
+    )
+    error = phi_model - phi_fit[i]
+    print(f"{u_fit[i]:>5}  "
+          f"{Mr_model:>10.4f}  "
+          f"{phi_model:>10.1f}  "
+          f"{phi_fit[i]:>12.1f}  "
+          f"{error:>+8.2f}")
+
+# ============================================================
+# PLOT
+# ============================================================
+u_plot = np.linspace(0, 50, 300)
+Mr_plot = c1*u_plot + c2*u_plot**2
+
+plt.figure(figsize=(9, 5))
+plt.scatter(u_fit, Mr_fit,
+            color='blue', s=80, zorder=5,
+            label='Data x=0.09')
+plt.plot(u_plot, Mr_plot,
+         'g-', linewidth=2,
+         label=f'Quadratic: {c1:.5f}u + {c2:.5f}u²')
+
+# Mark operating range
+plt.axvline(x=48, color='red', 
+            linestyle='--', alpha=0.5,
+            label='Max u=48%')
+
+plt.xlabel('u [%]')
+plt.ylabel('Motor Torque Mr [Nm]')
+plt.title('Motor Torque Model — Quadratic Fit (x=0.09 only)')
+plt.legend()
+plt.grid(True)  
+plt.show()

@@ -60,8 +60,3 @@ Hybrid physics-informed ML for nonlinear system identification and Model Predict
 - [ ] Improve recursive stability beyond 30s horizon
 
 ---
-
-## References
-
-1. Luo et al., *MPC of Nonlinear Processes Using Neural ODE Models*, Comp. Chem. Eng., 2023
-2. Matzakos & Sfyrakis, *Comparing PINN and Neural ODE Approaches*, arXiv:2603.26921, 2026

@@ -13,8 +13,9 @@ Q_phi = 5000.0
 Q_pad = 50.0
 R_u = 0.0001
 
-u_min = -10.0
-u_max = 10.0
+# Positive inputs only
+u_min = 0.0
+u_max = 40.0
 
 candidate_inputs = np.linspace(
     u_min,
@@ -64,26 +65,36 @@ def mpc_control(
 
     return best_u
 
+
 # ============================================================
-# CLOSED LOOP SIMULATION
+# SIMULATION SETTINGS
 # ============================================================
 
 Tsim = 5.0
-
 Nsim = int(Tsim / Ts)
 
 phi_hist = np.zeros(Nsim)
 phi_dot_hist = np.zeros(Nsim)
 u_hist = np.zeros(Nsim)
+
 # ============================================================
 # REFERENCE
 # ============================================================
 
-phi_ref_deg = 5
+phi_ref_deg = 90.0
+phi_ref = np.deg2rad(phi_ref_deg)
 
-phi_ref = np.deg2rad(
-    phi_ref_deg
-)
+# ============================================================
+# INITIAL CONDITION
+# ============================================================
+
+phi_hist[0] = np.deg2rad(0.0)
+phi_dot_hist[0] = 0.0
+
+# ============================================================
+# SIMULATION LOOP
+# ============================================================
+
 for k in range(Nsim - 1):
 
     phi = phi_hist[k]
@@ -116,40 +127,6 @@ for k in range(Nsim - 1):
     phi_hist[k + 1] = phi_next
     phi_dot_hist[k + 1] = phi_dot_next
 
-# ------------------------------------------------------------
-# INITIAL CONDITION
-# ------------------------------------------------------------
-
-phi_hist[0] = np.deg2rad(0)
-phi_dot_hist[0] = 0.0
-
-# ============================================================
-# SIMULATION LOOP
-# ============================================================
-
-for k in range(Nsim - 1):
-
-    phi = phi_hist[k]
-    phi_dot = phi_dot_hist[k]
-
-    u = mpc_control(
-        phi,
-        phi_dot,
-        phi_ref
-    )
-
-    u_hist[k] = u
-
-    phi_next, phi_dot_next = rk4_step(
-        phi,
-        phi_dot,
-        u,
-        Ts
-    )
-
-    phi_hist[k + 1] = phi_next
-    phi_dot_hist[k + 1] = phi_dot_next
-
 
 # ============================================================
 # PLOTS
@@ -158,6 +135,10 @@ for k in range(Nsim - 1):
 t = np.arange(Nsim) * Ts
 
 plt.figure(figsize=(12, 8))
+
+# ------------------------------------------------------------
+# PA
+# ------------------------------------------------------------
 
 plt.subplot(3, 1, 1)
 
@@ -169,19 +150,20 @@ plt.plot(
 
 plt.axhline(
     phi_ref_deg,
+    color="r",
     linestyle="--",
     label="Reference"
 )
 
 plt.ylabel("PA [deg]")
-
-plt.title(
-    f"RK4 MPC Tracking ({phi_ref_deg} deg)"
-)
-
+plt.title(f"RK4 MPC Tracking ({phi_ref_deg} deg)")
 plt.grid(True)
-
 plt.legend()
+
+# ------------------------------------------------------------
+# PAD
+# ------------------------------------------------------------
+
 plt.subplot(3, 1, 2)
 
 plt.plot(
@@ -190,8 +172,11 @@ plt.plot(
 )
 
 plt.ylabel("PAD [deg/s]")
-
 plt.grid(True)
+
+# ------------------------------------------------------------
+# CONTROL INPUT
+# ------------------------------------------------------------
 
 plt.subplot(3, 1, 3)
 
@@ -202,9 +187,7 @@ plt.plot(
 
 plt.ylabel("u")
 plt.xlabel("Time [s]")
-
 plt.grid(True)
 
 plt.tight_layout()
-
 plt.show()
